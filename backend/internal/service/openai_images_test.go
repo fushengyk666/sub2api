@@ -1947,6 +1947,24 @@ func TestOpenAIGatewayServiceForwardImages_OAuthEditsStreamingTransformsEvents(t
 	require.False(t, gjson.Get(completed.Data, "revised_prompt").Exists())
 }
 
+func TestBuildOpenAIImagesResponsesRequest_UsesLunaAndPreservesImageModel(t *testing.T) {
+	for _, model := range []string{"gpt-image-2", "gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} {
+		t.Run(model, func(t *testing.T) {
+			parsed := &OpenAIImagesRequest{
+				Endpoint: openAIImagesGenerationsEndpoint,
+				Model:    model,
+				Prompt:   "draw a cat",
+				N:        1,
+			}
+
+			body, err := buildOpenAIImagesResponsesRequest(parsed, model)
+			require.NoError(t, err)
+			require.Equal(t, model, gjson.GetBytes(body, "tools.0.model").String())
+			require.Equal(t, "gpt-5.6-luna", gjson.GetBytes(body, "model").String())
+		})
+	}
+}
+
 func TestBuildOpenAIImagesResponsesRequest_PassesThroughNForMultiImageModels(t *testing.T) {
 	parsed := &OpenAIImagesRequest{
 		Endpoint: openAIImagesGenerationsEndpoint,
